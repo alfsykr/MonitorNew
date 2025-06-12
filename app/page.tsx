@@ -9,6 +9,7 @@ import { TemperatureScale } from '@/components/temperature-scale';
 import { CPUMonitoringTable } from '@/components/cpu-monitoring-table';
 import { Footer } from '@/components/footer';
 import { useAIDA64 } from '@/lib/aida64-context';
+import { useModbus } from '@/lib/modbus-context';
 import { 
   Cpu, 
   Thermometer, 
@@ -18,6 +19,7 @@ import {
 
 export default function HomePage() {
   const { cpuData, metrics, isConnected } = useAIDA64();
+  const { sht20Data, isConnected: modbusConnected } = useModbus();
   const [localMetrics, setLocalMetrics] = useState({
     cpuCount: 7,
     roomTemp: 24.5,
@@ -40,17 +42,26 @@ export default function HomePage() {
     }
   }, [cpuData]);
 
-  // Simulate room temperature variation
+  // Update room temperature from SHT20 sensor or simulate
   useEffect(() => {
-    const interval = setInterval(() => {
+    if (modbusConnected) {
+      // Use real SHT20 data
       setLocalMetrics(prev => ({
         ...prev,
-        roomTemp: 24.5 + (Math.random() - 0.5) * 2,
+        roomTemp: sht20Data.temperature,
       }));
-    }, 5000);
+    } else {
+      // Simulate room temperature variation
+      const interval = setInterval(() => {
+        setLocalMetrics(prev => ({
+          ...prev,
+          roomTemp: 24.5 + (Math.random() - 0.5) * 2,
+        }));
+      }, 5000);
 
-    return () => clearInterval(interval);
-  }, []);
+      return () => clearInterval(interval);
+    }
+  }, [modbusConnected, sht20Data.temperature]);
 
   return (
     <div className="flex h-screen bg-background">
@@ -67,11 +78,18 @@ export default function HomePage() {
               <p className="text-muted-foreground mt-2">
                 Real-time monitoring dashboard for CPU temperature and room environment
               </p>
-              {isConnected && (
-                <p className="text-sm text-green-600 mt-1">
-                  🟢 Connected to AIDA64 data source
-                </p>
-              )}
+              <div className="flex gap-2 mt-2">
+                {isConnected && (
+                  <p className="text-sm text-green-600">
+                    🟢 Connected to AIDA64 data source
+                  </p>
+                )}
+                {modbusConnected && (
+                  <p className="text-sm text-blue-600">
+                    🔵 Connected to SHT20 sensor via Modbus
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Metrics Cards */}
@@ -88,8 +106,8 @@ export default function HomePage() {
               <MetricCard
                 title="Suhu Ruangan Lab"
                 value={`${localMetrics.roomTemp.toFixed(1)}°C`}
-                status="Normal"
-                statusColor="orange"
+                status={modbusConnected ? "SHT20" : "Simulated"}
+                statusColor={modbusConnected ? "green" : "orange"}
                 icon={Thermometer}
                 iconColor="orange"
               />

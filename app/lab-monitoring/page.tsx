@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/sidebar';
 import { Header } from '@/components/header';
 import { MetricCard } from '@/components/metric-card';
+import { ModbusConnectionPanel } from '@/components/modbus-connection-panel';
 import { Footer } from '@/components/footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { useModbus } from '@/lib/modbus-context';
 import { 
   Thermometer, 
   Droplets, 
@@ -16,31 +18,8 @@ import {
   Gauge
 } from 'lucide-react';
 
-// Generate SHT20 sensor data for lab monitoring
-const generateSHT20Data = () => {
-  const data = [];
-  const now = new Date();
-  
-  for (let i = 23; i >= 0; i--) {
-    const time = new Date(now.getTime() - i * 60 * 60 * 1000);
-    const hour = time.getHours().toString().padStart(2, '0') + ':00';
-    
-    // Generate realistic lab environment data from SHT20
-    const temperature = 24 + Math.sin((i / 24) * 2 * Math.PI) * 3 + Math.random() * 2 - 1;
-    const humidity = 45 + Math.sin((i / 24) * 2 * Math.PI) * 10 + Math.random() * 5 - 2.5;
-    
-    data.push({
-      time: hour,
-      temperature: Math.round(temperature * 10) / 10,
-      humidity: Math.round(humidity * 10) / 10,
-    });
-  }
-  
-  return data;
-};
-
-// Generate 10-minute interval monitoring data
-const generateMonitoringTable = () => {
+// Generate monitoring table data
+const generateMonitoringTable = (currentTemp: number, currentHumidity: number) => {
   const data = [];
   const now = new Date();
   
@@ -52,20 +31,22 @@ const generateMonitoringTable = () => {
       hour12: false 
     });
     
-    const temperature = 23 + Math.random() * 4; // 23-27°C
-    const humidity = 45 + Math.random() * 15; // 45-60%
-    const roundedTemp = Math.round(temperature * 10) / 10;
-    const roundedHum = Math.round(humidity * 10) / 10;
+    // Use current values with slight historical variation
+    const tempVariation = (Math.random() - 0.5) * 2;
+    const humidityVariation = (Math.random() - 0.5) * 5;
+    
+    const temperature = Math.round((currentTemp + tempVariation) * 10) / 10;
+    const humidity = Math.round((currentHumidity + humidityVariation) * 10) / 10;
     
     // AC Action logic: if temperature > 25°C, turn on AC
-    const acAction = roundedTemp > 25 ? 'AC ON - Cooling' : 'AC OFF - Standby';
-    const status = roundedTemp > 26 ? 'Warning' : roundedTemp > 25 ? 'Caution' : 'Normal';
+    const acAction = temperature > 25 ? 'AC ON - Cooling' : 'AC OFF - Standby';
+    const status = temperature > 26 ? 'Warning' : temperature > 25 ? 'Caution' : 'Normal';
     
     data.push({
       id: i,
       time: timeStr,
-      temperature: roundedTemp,
-      humidity: roundedHum,
+      temperature,
+      humidity,
       acAction,
       status
     });
@@ -75,6 +56,7 @@ const generateMonitoringTable = () => {
 };
 
 export default function LabMonitoringPage() {
+  const { sht20Data, isConnected, historicalData } = useModbus();
   const [chartData, setChartData] = useState<any[]>([]);
   const [monitoringData, setMonitoringData] = useState<any[]>([]);
   const [metrics, setMetrics] = useState({
@@ -84,30 +66,71 @@ export default function LabMonitoringPage() {
     acStatus: 'Active'
   });
 
+  // Generate chart data from historical data or mock data
+  const generateChartData = () => {
+    if (historicalData.length > 0) {
+      // Use real historical data
+      const data = historicalData.slice(-24).map((reading, index) => ({
+        time: reading.timestamp.toLocaleTimeString('id-ID', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        temperature: reading.temperature,
+        humidity: reading.humidity,
+      }));
+      return data;
+    } else {
+      // Generate mock 24-hour data
+      const data = [];
+      const now = new Date();
+      
+      for (let i = 23; i >= 0; i--) {
+        const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+        const hour = time.getHours().toString().padStart(2, '0') + ':00';
+        
+        // Use current SHT20 data as base with historical variation
+        const tempVariation = Math.sin((i / 24) * 2 * Math.PI) * 3 + Math.random() * 2 - 1;
+        const humidityVariation = Math.sin((i / 24) * 2 * Math.PI) * 10 + Math.random() * 5 - 2.5;
+        
+        const temperature = Math.round((sht20Data.temperature + tempVariation) * 10) / 10;
+        const humidity = Math.round((sht20Data.humidity + humidityVariation) * 10) / 10;
+        
+        data.push({
+          time: hour,
+          temperature,
+          humidity,
+        });
+      }
+      
+      return data;
+    }
+  };
+
   useEffect(() => {
-    // Set initial data after component mounts
-    setChartData(generateSHT20Data());
-    setMonitoringData(generateMonitoringTable());
+    // Update metrics from SHT20 data
+    setMetrics({
+      currentTemp: sht20Data.temperature,
+      currentHumidity: sht20Data.humidity,
+      airflow: 15 + Math.random() * 10, // 15-25 m/s (simulated)
+      acStatus: sht20Data.temperature > 25 ? 'Cooling' : 'Standby'
+    });
+
+    // Update chart data
+    setChartData(generateChartData());
     
+    // Update monitoring table
+    setMonitoringData(generateMonitoringTable(sht20Data.temperature, sht20Data.humidity));
+  }, [sht20Data, historicalData]);
+
+  // Auto-update chart and table every 30 seconds
+  useEffect(() => {
     const interval = setInterval(() => {
-      const newChartData = generateSHT20Data();
-      const newMonitoringData = generateMonitoringTable();
-      
-      setChartData(newChartData);
-      setMonitoringData(newMonitoringData);
-      
-      // Update metrics from latest data
-      const latestData = newChartData[newChartData.length - 1];
-      setMetrics({
-        currentTemp: latestData.temperature,
-        currentHumidity: latestData.humidity,
-        airflow: 15 + Math.random() * 10, // 15-25 m/s
-        acStatus: latestData.temperature > 25 ? 'Cooling' : 'Standby'
-      });
-    }, 10000); // Update every 10 seconds
+      setChartData(generateChartData());
+      setMonitoringData(generateMonitoringTable(sht20Data.temperature, sht20Data.humidity));
+    }, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [sht20Data]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -137,6 +160,19 @@ export default function LabMonitoringPage() {
               <p className="text-muted-foreground mt-2">
                 Real-time monitoring of laboratory environment using SHT20 sensor via Modbus
               </p>
+              <div className="mt-2 flex items-center gap-2">
+                <Badge variant={isConnected ? "default" : "secondary"}>
+                  {isConnected ? "Modbus Connected" : "Modbus Disconnected"}
+                </Badge>
+                <Badge variant="outline">
+                  SHT20 Sensor
+                </Badge>
+              </div>
+            </div>
+
+            {/* Modbus Connection Panel */}
+            <div className="mb-8">
+              <ModbusConnectionPanel />
             </div>
 
             {/* Metrics Cards */}
@@ -144,8 +180,8 @@ export default function LabMonitoringPage() {
               <MetricCard
                 title="Current Temperature"
                 value={`${metrics.currentTemp}°C`}
-                status="SHT20"
-                statusColor="orange"
+                status={isConnected ? "SHT20" : "Simulated"}
+                statusColor={isConnected ? "green" : "orange"}
                 icon={Thermometer}
                 iconColor="orange"
               />
@@ -153,8 +189,8 @@ export default function LabMonitoringPage() {
               <MetricCard
                 title="Current Humidity"
                 value={`${metrics.currentHumidity}%`}
-                status="SHT20"
-                statusColor="blue"
+                status={isConnected ? "SHT20" : "Simulated"}
+                statusColor={isConnected ? "green" : "blue"}
                 icon={Droplets}
                 iconColor="blue"
               />
@@ -182,7 +218,14 @@ export default function LabMonitoringPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <Card className="border-0 bg-card/50 backdrop-blur-sm">
                 <CardHeader>
-                  <CardTitle className="text-lg font-semibold">24-Hour Temperature Trend (SHT20)</CardTitle>
+                  <CardTitle className="text-lg font-semibold flex items-center justify-between">
+                    24-Hour Temperature Trend
+                    {isConnected && (
+                      <Badge variant="default" className="bg-green-500/10 text-green-500 border-green-500/20">
+                        Live Data
+                      </Badge>
+                    )}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-80">
@@ -232,7 +275,14 @@ export default function LabMonitoringPage() {
 
               <Card className="border-0 bg-card/50 backdrop-blur-sm">
                 <CardHeader>
-                  <CardTitle className="text-lg font-semibold">24-Hour Humidity Trend (SHT20)</CardTitle>
+                  <CardTitle className="text-lg font-semibold flex items-center justify-between">
+                    24-Hour Humidity Trend
+                    {isConnected && (
+                      <Badge variant="default" className="bg-green-500/10 text-green-500 border-green-500/20">
+                        Live Data
+                      </Badge>
+                    )}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-80">
@@ -284,7 +334,14 @@ export default function LabMonitoringPage() {
             {/* 10-Minute Monitoring Table */}
             <Card className="border-0 bg-card/50 backdrop-blur-sm mb-8">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold">Lab Environment Monitoring (10-Minute Intervals)</CardTitle>
+                <CardTitle className="text-lg font-semibold flex items-center justify-between">
+                  Lab Environment Monitoring (10-Minute Intervals)
+                  {isConnected && (
+                    <Badge variant="default" className="bg-green-500/10 text-green-500 border-green-500/20">
+                      Real-time Data
+                    </Badge>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>

@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AIDA64Provider } from '@/lib/aida64-context';
+import { ModbusProvider } from '@/lib/modbus-context';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -26,7 +27,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AIDA64Provider>
-            {children}
+            <ModbusProvider>
+              {children}
+            </ModbusProvider>
           </AIDA64Provider>
         </ThemeProvider>
       </body>
