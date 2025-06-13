@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AIDA64Provider } from '@/lib/aida64-context';
 import { ESP32Provider } from '@/lib/esp32-context';
+import { ModbusProvider } from '@/lib/modbus-context';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -28,7 +29,9 @@ export default function RootLayout({
         >
           <AIDA64Provider>
             <ESP32Provider>
-              {children}
+              <ModbusProvider>
+                {children}
+              </ModbusProvider>
             </ESP32Provider>
           </AIDA64Provider>
         </ThemeProvider>
