@@ -9,7 +9,7 @@ import { TemperatureScale } from '@/components/temperature-scale';
 import { CPUMonitoringTable } from '@/components/cpu-monitoring-table';
 import { Footer } from '@/components/footer';
 import { useAIDA64 } from '@/lib/aida64-context';
-import { useModbus } from '@/lib/modbus-context';
+import { useESP32 } from '@/lib/esp32-context';
 import { 
   Cpu, 
   Thermometer, 
@@ -19,7 +19,7 @@ import {
 
 export default function HomePage() {
   const { cpuData, metrics, isConnected } = useAIDA64();
-  const { sht20Data, isConnected: modbusConnected } = useModbus();
+  const { sht20Data, isConnected: esp32Connected } = useESP32();
   const [localMetrics, setLocalMetrics] = useState({
     cpuCount: 7,
     roomTemp: 24.5,
@@ -42,10 +42,10 @@ export default function HomePage() {
     }
   }, [cpuData]);
 
-  // Update room temperature from SHT20 sensor or simulate
+  // Update room temperature from ESP32 sensor or simulate
   useEffect(() => {
-    if (modbusConnected) {
-      // Use real SHT20 data
+    if (esp32Connected) {
+      // Use real ESP32 data
       setLocalMetrics(prev => ({
         ...prev,
         roomTemp: sht20Data.temperature,
@@ -61,7 +61,7 @@ export default function HomePage() {
 
       return () => clearInterval(interval);
     }
-  }, [modbusConnected, sht20Data.temperature]);
+  }, [esp32Connected, sht20Data.temperature]);
 
   return (
     <div className="flex h-screen bg-background">
@@ -84,9 +84,9 @@ export default function HomePage() {
                     🟢 Connected to AIDA64 data source
                   </p>
                 )}
-                {modbusConnected && (
+                {esp32Connected && (
                   <p className="text-sm text-blue-600">
-                    🔵 Connected to SHT20 sensor via Modbus
+                    🔵 Connected to ESP32 SHT20 sensor
                   </p>
                 )}
               </div>
@@ -106,8 +106,8 @@ export default function HomePage() {
               <MetricCard
                 title="Suhu Ruangan Lab"
                 value={`${localMetrics.roomTemp.toFixed(1)}°C`}
-                status={modbusConnected ? "SHT20" : "Simulated"}
-                statusColor={modbusConnected ? "green" : "orange"}
+                status={esp32Connected ? "ESP32" : "Simulated"}
+                statusColor={esp32Connected ? "green" : "orange"}
                 icon={Thermometer}
                 iconColor="orange"
               />

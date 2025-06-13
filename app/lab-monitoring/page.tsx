@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/sidebar';
 import { Header } from '@/components/header';
 import { MetricCard } from '@/components/metric-card';
-import { ModbusConnectionPanel } from '@/components/modbus-connection-panel';
+import { ESP32ConnectionPanel } from '@/components/esp32-connection-panel';
 import { Footer } from '@/components/footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { useModbus } from '@/lib/modbus-context';
+import { useESP32 } from '@/lib/esp32-context';
 import { 
   Thermometer, 
   Droplets, 
@@ -56,7 +56,7 @@ const generateMonitoringTable = (currentTemp: number, currentHumidity: number) =
 };
 
 export default function LabMonitoringPage() {
-  const { sht20Data, isConnected, historicalData } = useModbus();
+  const { sht20Data, isConnected, historicalData } = useESP32();
   const [chartData, setChartData] = useState<any[]>([]);
   const [monitoringData, setMonitoringData] = useState<any[]>([]);
   const [metrics, setMetrics] = useState({
@@ -158,21 +158,21 @@ export default function LabMonitoringPage() {
             <div className="mb-8">
               <h1 className="text-3xl font-bold tracking-tight">Lab Monitoring</h1>
               <p className="text-muted-foreground mt-2">
-                Real-time monitoring of laboratory environment using SHT20 sensor via Modbus
+                Real-time monitoring of laboratory environment using SHT20 sensor via ESP32 & Modbus RS485
               </p>
               <div className="mt-2 flex items-center gap-2">
                 <Badge variant={isConnected ? "default" : "secondary"}>
-                  {isConnected ? "Modbus Connected" : "Modbus Disconnected"}
+                  {isConnected ? "ESP32 Connected" : "ESP32 Disconnected"}
                 </Badge>
                 <Badge variant="outline">
-                  SHT20 Sensor
+                  SHT20 via Modbus RS485
                 </Badge>
               </div>
             </div>
 
-            {/* Modbus Connection Panel */}
+            {/* ESP32 Connection Panel */}
             <div className="mb-8">
-              <ModbusConnectionPanel />
+              <ESP32ConnectionPanel />
             </div>
 
             {/* Metrics Cards */}
@@ -180,7 +180,7 @@ export default function LabMonitoringPage() {
               <MetricCard
                 title="Current Temperature"
                 value={`${metrics.currentTemp}°C`}
-                status={isConnected ? "SHT20" : "Simulated"}
+                status={isConnected ? "ESP32" : "Simulated"}
                 statusColor={isConnected ? "green" : "orange"}
                 icon={Thermometer}
                 iconColor="orange"
@@ -189,7 +189,7 @@ export default function LabMonitoringPage() {
               <MetricCard
                 title="Current Humidity"
                 value={`${metrics.currentHumidity}%`}
-                status={isConnected ? "SHT20" : "Simulated"}
+                status={isConnected ? "ESP32" : "Simulated"}
                 statusColor={isConnected ? "green" : "blue"}
                 icon={Droplets}
                 iconColor="blue"
