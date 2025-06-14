@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/sidebar';
 import { Header } from '@/components/header';
 import { MetricCard } from '@/components/metric-card';
 import { CPUMonitoringTable } from '@/components/cpu-monitoring-table';
+import { MultiPCMonitoring } from '@/components/multi-pc-monitoring';
 import { Footer } from '@/components/footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -138,7 +139,7 @@ Date,Time,UpTime,CPU,CPU Package,CPU IA Cores,CPU GT Cores,HDD1
               <CardContent className="p-6">
                 <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                   <Upload className="w-5 h-5" />
-                  Upload AIDA64 CSV File
+                  Upload AIDA64 CSV File (Local PC)
                 </h2>
                 
                 <div className="flex gap-4 items-center flex-wrap">
@@ -262,8 +263,15 @@ Date,Time,UpTime,CPU,CPU Package,CPU IA Cores,CPU GT Cores,HDD1
               ))}
             </div>
 
-            {/* Detailed CPU Table */}
-            <CPUMonitoringTable cpuData={cpuData} />
+            {/* Local PC CPU Table */}
+            <div className="mb-8">
+              <CPUMonitoringTable cpuData={cpuData} />
+            </div>
+
+            {/* Multi-PC Monitoring Section */}
+            <div className="mb-8">
+              <MultiPCMonitoring />
+            </div>
 
             {/* Footer */}
             <Footer />

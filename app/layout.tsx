@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { AIDA64Provider } from '@/lib/aida64-context';
 import { ESP32Provider } from '@/lib/esp32-context';
 import { ModbusProvider } from '@/lib/modbus-context';
+import { MultiPCProvider } from '@/lib/multi-pc-context';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -30,7 +31,9 @@ export default function RootLayout({
           <AIDA64Provider>
             <ESP32Provider>
               <ModbusProvider>
-                {children}
+                <MultiPCProvider>
+                  {children}
+                </MultiPCProvider>
               </ModbusProvider>
             </ESP32Provider>
           </AIDA64Provider>
