@@ -20,7 +20,7 @@ from supabase import create_client, Client
 
 # Configuration
 SUPABASE_URL = "https://virbyfqulbxlnpiiwvmx.supabase.co"
-SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZpcmJ5ZnF1bGJ4bG5waWl3dm14Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1Mzk5NTksImV4cCI6MjA2NTExNTk1OX0.GaLQQC1vZKyL7amq36cuYPKO8O14LBIe-iyVCsKxdJo"
 COMPUTER_NAME = socket.gethostname()
 COMPUTER_IP = socket.gethostbyname(socket.gethostname())
 POLL_INTERVAL = 5  # seconds
