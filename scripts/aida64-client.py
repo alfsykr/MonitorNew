@@ -19,7 +19,7 @@ from datetime import datetime
 from supabase import create_client, Client
 
 # Configuration
-SUPABASE_URL = "YOUR_SUPABASE_URL"
+SUPABASE_URL = "https://virbyfqulbxlnpiiwvmx.supabase.co"
 SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY"
 COMPUTER_NAME = socket.gethostname()
 COMPUTER_IP = socket.gethostbyname(socket.gethostname())
